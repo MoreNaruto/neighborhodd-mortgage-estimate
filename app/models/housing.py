@@ -23,6 +23,7 @@ class HousingPricingResponse(BaseModel):
     confidence_level: ConfidenceLevel
     data_sources: List[str] = Field(
         ...,
+        min_length=1,
         description="List of data sources or estimation methods used"
     )
     summary: str = Field(
