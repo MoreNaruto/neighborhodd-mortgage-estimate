@@ -78,6 +78,25 @@ Provide your response as a JSON object with this exact structure:
 
 Return ONLY the JSON object, no additional text or formatting."""
 
+    def _extract_json_from_response(self, content: str) -> str:
+        content = content.strip()
+
+        if content.startswith("```"):
+            lines = content.split("\n")
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            content = "\n".join(lines).strip()
+
+        start_idx = content.find("{")
+        end_idx = content.rfind("}")
+
+        if start_idx == -1 or end_idx == -1:
+            raise ClaudeServiceError("No JSON object found in Claude response")
+
+        return content[start_idx:end_idx + 1]
+
     async def _call_claude_with_retry(
         self,
         prompt: str,
@@ -94,7 +113,8 @@ Return ONLY the JSON object, no additional text or formatting."""
                 )
 
                 content = response.content[0].text
-                return json.loads(content)
+                json_content = self._extract_json_from_response(content)
+                return json.loads(json_content)
 
             except (APITimeoutError, APIError) as e:
                 if attempt == max_retries:
